@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	cloud.google.com/go/pubsub/v2 v2.0.0
 	github.com/google/uuid v1.6.0
+	github.com/rabbitmq/amqp091-go v1.10.0
 	google.golang.org/grpc v1.74.2
 )
 
