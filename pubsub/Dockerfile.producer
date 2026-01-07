@@ -1,0 +1,15 @@
+FROM golang:1.25 AS builder
+WORKDIR /src
+
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+
+# Build into /out (avoid /bin collisions)
+RUN mkdir -p /out \
+  && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o /out/producer ./pubsub/cmd/producer \
+  && ls -l /out/producer
+
+FROM gcr.io/distroless/base:latest
+COPY --from=builder --chmod=0755 /out/producer /bin/producer
+CMD ["/bin/producer"]

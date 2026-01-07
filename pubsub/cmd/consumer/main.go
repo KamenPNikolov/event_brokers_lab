@@ -1,4 +1,4 @@
-package consumer
+package main
 
 import (
 	"context"
@@ -41,6 +41,9 @@ func ensureTopic(ctx context.Context, client *pubsub.Client, projectID, topicID 
 		return err
 	}
 	_, err = client.TopicAdminClient.CreateTopic(ctx, &pubsubpb.Topic{Name: name})
+	if status.Code(err) == codes.AlreadyExists {
+		return nil
+	}
 	return err
 }
 

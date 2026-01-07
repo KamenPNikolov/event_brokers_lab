@@ -1,34 +1,42 @@
 services:
-  # --------------------
-  # Google Pub/Sub emulator
-  # --------------------
   pubsub:
-    image: google/cloud-sdk:latest
+    # Multi-arch image available on GCR (prefer this over dockerhub google/cloud-sdk) :contentReference[oaicite:1]{index=1}
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:latest
     command: >
       bash -lc "gcloud beta emulators pubsub start --host-port=0.0.0.0:8085"
     ports:
       - "8085:8085"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/8085'"]
+      interval: 2s
+      timeout: 2s
+      retries: 40
 
   pubsub-producer:
     build:
       context: .
       dockerfile: pubsub/Dockerfile.producer
+      platforms:
+        - "linux/arm64"
     environment:
       PUBSUB_EMULATOR_HOST: pubsub:8085
       PUBSUB_PROJECT: demo-project
       PUBSUB_TOPIC: events
     depends_on:
-      - pubsub
+      pubsub:
+        condition: service_healthy
 
   pubsub-worker:
     build:
       context: .
       dockerfile: pubsub/Dockerfile.worker
+      platforms:
+        - "linux/arm64"
     environment:
       PUBSUB_EMULATOR_HOST: pubsub:8085
       PUBSUB_PROJECT: demo-project
       PUBSUB_TOPIC: events
       PUBSUB_SUB: worker-sub
     depends_on:
-      - pubsub
-
+      pubsub:
+        condition: service_healthy

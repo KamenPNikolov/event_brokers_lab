@@ -1,0 +1,17 @@
+FROM golang:1.25 AS builder
+
+WORKDIR /src
+
+# Copy module files first for caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the source
+COPY . .
+
+# Build
+RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/worker ./pubsub/cmd/consumer
+
+FROM gcr.io/distroless/base:latest
+COPY --from=builder  --chmod=0755 /bin/worker /bin/worker
+CMD ["/bin/worker"]
