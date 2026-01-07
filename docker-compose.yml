@@ -1,0 +1,34 @@
+services:
+  # --------------------
+  # Google Pub/Sub emulator
+  # --------------------
+  pubsub:
+    image: google/cloud-sdk:latest
+    command: >
+      bash -lc "gcloud beta emulators pubsub start --host-port=0.0.0.0:8085"
+    ports:
+      - "8085:8085"
+
+  pubsub-producer:
+    build:
+      context: .
+      dockerfile: pubsub/Dockerfile.producer
+    environment:
+      PUBSUB_EMULATOR_HOST: pubsub:8085
+      PUBSUB_PROJECT: demo-project
+      PUBSUB_TOPIC: events
+    depends_on:
+      - pubsub
+
+  pubsub-worker:
+    build:
+      context: .
+      dockerfile: pubsub/Dockerfile.worker
+    environment:
+      PUBSUB_EMULATOR_HOST: pubsub:8085
+      PUBSUB_PROJECT: demo-project
+      PUBSUB_TOPIC: events
+      PUBSUB_SUB: worker-sub
+    depends_on:
+      - pubsub
+
