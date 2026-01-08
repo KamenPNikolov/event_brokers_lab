@@ -78,3 +78,51 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+  
+  # --------------------
+  # Kafka via Redpanda (Kafka-compatible)
+  # We expose an OUTSIDE listener for host tools.
+  # --------------------
+  redpanda:
+    image: redpandadata/redpanda:latest
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp
+      - "1"
+      - --memory
+      - "1G"
+      - --reserve-memory
+      - "0M"
+      - --node-id
+      - "0"
+      - --check=false
+      - --kafka-addr
+      - "PLAINTEXT://0.0.0.0:9092,OUTSIDE://0.0.0.0:19092"
+      - --advertise-kafka-addr
+      - "PLAINTEXT://redpanda:9092,OUTSIDE://localhost:19092"
+    ports:
+      - "19092:19092"
+
+  kafka-producer:
+    build:
+      context: .
+      dockerfile: kafka/Dockerfile.producer
+    environment:
+      KAFKA_BROKER: redpanda:9092
+      KAFKA_TOPIC: events
+    depends_on:
+      - redpanda
+
+  kafka-worker:
+    build:
+      context: .
+      dockerfile: kafka/Dockerfile.worker
+    environment:
+      KAFKA_BROKER: redpanda:9092
+      KAFKA_TOPIC: events
+      KAFKA_DLQ_TOPIC: events.dlq
+      KAFKA_GROUP: worker-group
+    depends_on:
+      - redpanda
